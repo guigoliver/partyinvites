@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"html/template"
+	"net/http"
 )
 
 // type: defines a custom type
@@ -42,6 +43,44 @@ func loadTemplates() {
 	}
 }
 
+func welcomeHandler(writer http.ResponseWriter, request *http.Request) {
+	templates["welcome"].Execute(writer, nil)
+}
+
+func listHandler(writer http.ResponseWriter, request *http.Request) {
+	templates["list"].Execute(writer, responses)
+}
+
+/** Points to the Rsvp struct. I can create a formData instance using an 
+existing Rsvp value (without copying)
+*/
+type formData struct {
+	*Rsvp
+	Errors []string
+}
+
+/** checks if the method is GET and executes the form template with default data
+	In Go, there's no 'new' keyword. Default values are created with {}
+	It creates a formData struct by creating a Rsvp with a slice of strings.
+	The & creates a pointer to a value
+*/
+func formHandler(writer http.ResponseWriter, request *http.Request) {
+	if request.Method == http.MethodGet {
+		templates["form"].Execute(writer, formData {
+			Rsvp: &Rsvp{}, Errors: []string {},
+		})
+	}
+}
+
 func main() {
 	loadTemplates()
+
+	http.HandleFunc("/", welcomeHandler)
+	http.HandleFunc("/list", listHandler)
+	http.HandleFunc("/form", formHandler)
+
+	err := http.ListenAndServe(":5000", nil)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
